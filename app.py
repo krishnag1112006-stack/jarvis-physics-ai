@@ -56,30 +56,42 @@ CREATE TABLE IF NOT EXISTS observations(
 conn.commit()
 
 # =========================================================
-# API CONFIGURATION & HELPER
+# API CONFIGURATION & HELPER - GROQ FREE API
 # =========================================================
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "YOUR_API_KEY")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
-def ask_jarvis_ai(prompt_text, model_name="openai/gpt-3.5-turbo"):
-    """Helper function to route all text requests cleanly to OpenRouter."""
-    if OPENROUTER_API_KEY == "YOUR_API_KEY":
-        return "⚠️ Configuration Error: Please set your valid OpenRouter API Key in environment variables (OPENROUTER_API_KEY)."
+def ask_jarvis_ai(prompt_text, model_name="mixtral-8x7b-32768"):
+    """Helper function to route all text requests to FREE Groq API (no payment needed)."""
+    if not GROQ_API_KEY:
+        return """⚠️ Configuration Error: Please set GROQ_API_KEY environment variable.
+        
+Get free API key at: https://console.groq.com/keys
+Then run: export GROQ_API_KEY="your-key-here"
+"""
     try:
         response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+            "https://api.groq.com/openai/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {GROQ_API_KEY}",
                 "Content-Type": "application/json"
             },
             json={
                 "model": model_name,
-                "messages": [{"role": "user", "content": prompt_text}]
+                "messages": [{"role": "user", "content": prompt_text}],
+                "temperature": 0.7,
+                "max_tokens": 1024
             },
             timeout=20
         )
         response.raise_for_status()
         result = response.json()
         return result["choices"][0]["message"]["content"]
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            return "❌ Invalid Groq API Key. Get free key at: https://console.groq.com/keys"
+        elif e.response.status_code == 429:
+            return "⏳ Rate limit exceeded. Groq free tier: 100 requests/minute. Please wait..."
+        return f"AI Server Error ({e.response.status_code}): {str(e)}"
     except Exception as e:
         return f"AI Server Error: {str(e)}"
 
@@ -165,11 +177,13 @@ else:
         with col2:
             st.metric("Connected Students", "25")
         with col3:
-            st.metric("AI Core Status", "Online (94% Acc)")
+            st.metric("AI Core Status", "Online (Groq - Free API)")
 
         st.markdown("---")
         st.subheader("📌 System Architecture Overview")
         st.write("Welcome to your control center. Switch options on the left control panel to utilize edge computer vision processing, dynamic optical character solvers, curve optimization pipelines, or automated reporting utilities.")
+        
+        st.info("🚀 **Now using FREE Groq API** - No payment required! 100 requests/minute free tier.")
 
     # =========================================================
     # FEATURE 2: LIVE CAMERA
@@ -313,7 +327,7 @@ else:
                 Include an intuitive Definition, Key Mechanical Principles, standard Governing Formulas in LaTeX format, 
                 and 3 technical viva questions with concise answers. Fix formatting using clean markdown headers.
                 """
-                ai_notes = ask_jarvis_ai(prompt, model_name="openai/gpt-4o")
+                ai_notes = ask_jarvis_ai(prompt)
                 st.markdown(ai_notes)
 
     # =========================================================
@@ -338,7 +352,7 @@ else:
             
             prompt = f"You are historical physicist {professor}. Respond to this question exactly as they would, matching their scientific philosophy and style: {user_question}"
             with st.spinner("Processing transmission response..."):
-                ai_reply = ask_jarvis_ai(prompt, model_name="openai/gpt-4o")
+                ai_reply = ask_jarvis_ai(prompt)
                 
             st.session_state.chat_history.append((f"Prof. {professor}", ai_reply))
             st.rerun()
@@ -353,7 +367,7 @@ else:
         if answer and st.button("Execute Proof Evaluation Pipeline"):
             with st.spinner("Analyzing semantics, logic, and formula validation..."):
                 prompt = f"Analyze the following student answer for any physics concept errors, misconception errors, mathematical logic gaps, or notation issues. Be constructive and specific:\n\n{answer}"
-                critique = ask_jarvis_ai(prompt, model_name="openai/gpt-4o")
+                critique = ask_jarvis_ai(prompt)
                 st.info("🧠 AI Assessment Breakdown")
                 st.write(critique)
 
@@ -381,7 +395,7 @@ else:
             if extracted_text.strip() and st.button("Execute Step-by-Step Resolution"):
                 with st.spinner("Calculating physical mathematical solution paths..."):
                     prompt = f"Solve this physics problem extracted via OCR. State Given data points, formulas required, step-by-step arithmetic steps, and the precise final unit value:\n\n{extracted_text}"
-                    solution = ask_jarvis_ai(prompt, model_name="openai/gpt-4o")
+                    solution = ask_jarvis_ai(prompt)
                     st.success("🔬 Calculated Resolution Strategy")
                     st.write(solution)
 
@@ -504,7 +518,7 @@ else:
                     
                     # Observations
                     story.append(Paragraph(f"<b>Observations:</b>", styles['Heading2']))
-                    story.append(Paragraph(notes, styles['Normal']))
+                    story.append(Paragraph(notes if notes else "No observations provided.", styles['Normal']))
                     story.append(Spacer(1, 12))
                     
                     # Data Table
