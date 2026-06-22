@@ -10,7 +10,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import requests
 import sqlite3
-import speech_recognition as sr
 import pyttsx3
 from PIL import Image
 from ultralytics import YOLO
@@ -18,6 +17,7 @@ import pytesseract
 import time
 import io
 import os
+import platform
 from scipy.optimize import curve_fit
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -63,11 +63,7 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 def ask_jarvis_ai(prompt_text, model_name="mixtral-8x7b-32768"):
     """Helper function to route all text requests to FREE Groq API (no payment needed)."""
     if not GROQ_API_KEY:
-        return """⚠️ Configuration Error: Please set GROQ_API_KEY environment variable.
-        
-Get free API key at: https://console.groq.com/keys
-Then run: export GROQ_API_KEY="your-key-here"
-"""
+        return "Configuration Error: Please set GROQ_API_KEY environment variable. Get free API key at: https://console.groq.com/keys"
     try:
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -88,9 +84,9 @@ Then run: export GROQ_API_KEY="your-key-here"
         return result["choices"][0]["message"]["content"]
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 401:
-            return "❌ Invalid Groq API Key. Get free key at: https://console.groq.com/keys"
+            return "Invalid Groq API Key. Get free key at: https://console.groq.com/keys"
         elif e.response.status_code == 429:
-            return "⏳ Rate limit exceeded. Groq free tier: 100 requests/minute. Please wait..."
+            return "Rate limit exceeded. Groq free tier: 100 requests/minute. Please wait..."
         return f"AI Server Error ({e.response.status_code}): {str(e)}"
     except Exception as e:
         return f"AI Server Error: {str(e)}"
@@ -107,7 +103,6 @@ model = load_yolo()
 # =========================================================
 # TESSERACT CONFIGURATION (Cross-platform)
 # =========================================================
-import platform
 if platform.system() == "Windows":
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -208,7 +203,7 @@ else:
         if st.session_state.video_running:
             cap = cv2.VideoCapture(0)
             if not cap.isOpened():
-                st.error("❌ Camera not found. Please check your hardware connection.")
+                st.error("Camera not found. Please check your hardware connection.")
             else:
                 stframe = st.empty()
                 metric_placeholder = st.empty()
@@ -322,11 +317,7 @@ else:
 
         if topic and st.button("Construct Interactive Material"):
             with st.spinner(f"Compiling structural guidelines for {topic}..."):
-                prompt = f"""
-                Act as an elite university physics professor. Generate structured study material for the topic: '{topic}'.
-                Include an intuitive Definition, Key Mechanical Principles, standard Governing Formulas in LaTeX format, 
-                and 3 technical viva questions with concise answers. Fix formatting using clean markdown headers.
-                """
+                prompt = f"Act as an elite university physics professor. Generate structured study material for the topic: {topic}. Include Definition, Key Principles, Formulas in LaTeX format, and 3 technical viva questions with answers."
                 ai_notes = ask_jarvis_ai(prompt)
                 st.markdown(ai_notes)
 
@@ -366,7 +357,7 @@ else:
 
         if answer and st.button("Execute Proof Evaluation Pipeline"):
             with st.spinner("Analyzing semantics, logic, and formula validation..."):
-                prompt = f"Analyze the following student answer for any physics concept errors, misconception errors, mathematical logic gaps, or notation issues. Be constructive and specific:\n\n{answer}"
+                prompt = f"Analyze the following student answer for any physics concept errors, misconception errors, mathematical logic gaps, or notation issues. Be constructive and specific: {answer}"
                 critique = ask_jarvis_ai(prompt)
                 st.info("🧠 AI Assessment Breakdown")
                 st.write(critique)
@@ -394,7 +385,7 @@ else:
 
             if extracted_text.strip() and st.button("Execute Step-by-Step Resolution"):
                 with st.spinner("Calculating physical mathematical solution paths..."):
-                    prompt = f"Solve this physics problem extracted via OCR. State Given data points, formulas required, step-by-step arithmetic steps, and the precise final unit value:\n\n{extracted_text}"
+                    prompt = f"Solve this physics problem extracted via OCR. State Given data points, formulas required, step-by-step arithmetic steps, and the precise final unit value: {extracted_text}"
                     solution = ask_jarvis_ai(prompt)
                     st.success("🔬 Calculated Resolution Strategy")
                     st.write(solution)
@@ -411,7 +402,7 @@ else:
             if st.button("Analyze Motion Fields"):
                 with st.spinner("Simulating multi-frame vision tracking vector pipelines..."):
                     st.success("Analysis Complete for Frame Matrix")
-                    st.write("📈 **Detected Profiles:** Constant tracking velocity match found. Period calculation suggests dampening coefficient matches expected parameters within a 2% margin error.")
+                    st.write("Detected Profiles: Constant tracking velocity match found. Period calculation suggests dampening coefficient matches expected parameters within a 2% margin error.")
 
     # =========================================================
     # FEATURE 11: CURVE FITTING SOLVER
@@ -423,7 +414,7 @@ else:
         data = pd.read_sql_query("SELECT * FROM observations WHERE experiment = ?", params=(experiment,), con=conn)
 
         if len(data) < 4:
-            st.warning("⚠️ Insufficient Data: Collect at least 4 observation points via your Live Camera to calculate trend curves.")
+            st.warning("Insufficient Data: Collect at least 4 observation points via your Live Camera to calculate trend curves.")
         else:
             st.subheader(f"Analyzing Trend Vectors for: {experiment}")
             x_data = np.array(data.index, dtype=float)
@@ -436,12 +427,12 @@ else:
                 popt, _ = curve_fit(linear_model, x_data, y_data)
                 m_calc, c_calc = popt
 
-                st.info(f"📈 **Derived Linear Equation Model:** $Y = {m_calc:.4f}X + {c_calc:.4f}$")
+                st.info(f"Derived Linear Equation Model: Y = {m_calc:.4f}X + {c_calc:.4f}")
                 
                 if experiment == "Hooke Law":
-                    st.success(f"🎯 **Calculated Spring Constant (k):** {abs(m_calc):.3f} N/m")
+                    st.success(f"Calculated Spring Constant (k): {abs(m_calc):.3f} N/m")
                 else:
-                    st.success(f"🎯 **Calculated Structural Drift:** {m_calc:.4f} units/trial")
+                    st.success(f"Calculated Structural Drift: {m_calc:.4f} units/trial")
 
                 fig, ax = plt.subplots(figsize=(9, 3.5))
                 ax.scatter(x_data, y_data, color="red", label="Recorded Telemetry Points")
@@ -462,7 +453,7 @@ else:
         data = pd.read_sql_query("SELECT * FROM observations WHERE experiment = ?", params=(experiment,), con=conn)
 
         if len(data) < 5:
-            st.info("💡 Run at least 5 trials under your active configuration profile to calibrate the statistical baseline.")
+            st.info("Run at least 5 trials under your active configuration profile to calibrate the statistical baseline.")
         else:
             values = data["value"].to_numpy()
             mean = np.mean(values)
@@ -478,11 +469,11 @@ else:
             st.markdown("---")
 
             if len(anomalies) > 0:
-                st.error(f"⚠️ Flagged {len(anomalies)} Outlier Data Points outside normal standard deviation fields:")
+                st.error(f"Flagged {len(anomalies)} Outlier Data Points outside normal standard deviation fields:")
                 st.dataframe(anomalies, use_container_width=True)
-                st.caption("💡 **Suggestion:** Check lab hardware orientation, lighting glare, or sensor calibration issues.")
+                st.caption("Suggestion: Check lab hardware orientation, lighting glare, or sensor calibration issues.")
             else:
-                st.success("✅ Structural Verification Clear: All data points map cleanly within safe operational fields.")
+                st.success("Structural Verification Clear: All data points map cleanly within safe operational fields.")
 
     # =========================================================
     # FEATURE 13: EXPORT LAB REPORT
@@ -493,7 +484,7 @@ else:
         data = pd.read_sql_query("SELECT * FROM observations WHERE experiment = ?", params=(experiment,), con=conn)
 
         if len(data) == 0:
-            st.error("❌ No telemetry profiles logged. Cannot export an empty report matrix.")
+            st.error("No telemetry profiles logged. Cannot export an empty report matrix.")
         else:
             student_name = st.text_input("Confirm Student Name Verification:", value=st.session_state.get('username', 'Guest'))
             notes = st.text_area("Add Student Lab Observations:")
@@ -507,7 +498,7 @@ else:
                     story = []
                     
                     # Title
-                    story.append(Paragraph(f"<b>Jarvis Physics Lab Report</b>", styles['Heading1']))
+                    story.append(Paragraph("<b>Jarvis Physics Lab Report</b>", styles['Heading1']))
                     story.append(Spacer(1, 12))
                     
                     # Student Info
@@ -517,12 +508,12 @@ else:
                     story.append(Spacer(1, 12))
                     
                     # Observations
-                    story.append(Paragraph(f"<b>Observations:</b>", styles['Heading2']))
+                    story.append(Paragraph("<b>Observations:</b>", styles['Heading2']))
                     story.append(Paragraph(notes if notes else "No observations provided.", styles['Normal']))
                     story.append(Spacer(1, 12))
                     
                     # Data Table
-                    story.append(Paragraph(f"<b>Recorded Data:</b>", styles['Heading2']))
+                    story.append(Paragraph("<b>Recorded Data:</b>", styles['Heading2']))
                     table_data = [["Experiment", "Value", "Timestamp"]]
                     for _, row in data.iterrows():
                         table_data.append([row["experiment"], f"{row['value']:.2f}", row["timestamp"]])
@@ -543,12 +534,12 @@ else:
                     
                     with open(filename, "rb") as f:
                         st.download_button(
-                            label="📥 Download Lab Report PDF",
+                            label="Download Lab Report PDF",
                             data=f.read(),
                             file_name=filename,
                             mime="application/pdf"
                         )
-                    st.success("✅ Lab report generated successfully!")
+                    st.success("Lab report generated successfully!")
                 except Exception as e:
                     st.error(f"PDF generation error: {e}")
 
@@ -556,10 +547,10 @@ else:
     # FEATURE 14: TEACHER DASHBOARD
     # =========================================================
     elif feature == "Teacher Dashboard":
-        st.header("👩‍🏫 Teacher Dashboard")
+        st.header("Teacher Dashboard")
         
         if st.session_state.role != "Teacher":
-            st.warning("⚠️ Access Restricted: Only teachers can access this dashboard.")
+            st.warning("Access Restricted: Only teachers can access this dashboard.")
         else:
             students_df = pd.read_sql_query("SELECT rowid, username FROM students", conn)
             st.dataframe(students_df, use_container_width=True)
@@ -575,29 +566,29 @@ else:
                 if new_user and new_password:
                     cursor.execute("INSERT INTO students VALUES(?, ?)", (new_user, new_password))
                     conn.commit()
-                    st.success("✅ Student added successfully.")
+                    st.success("Student added successfully.")
                     st.rerun()
                 else:
-                    st.error("❌ Both username and password are required.")
+                    st.error("Both username and password are required.")
 
     # =========================================================
     # FEATURE 15: VOICE ASSISTANT
     # =========================================================
     elif feature == "Voice Assistant":
-        st.header("🗣 Voice Assistant")
+        st.header("Voice Assistant")
         
         col1, col2 = st.columns([3, 1])
         with col1:
             spoken_text = st.text_input("Enter command or text for Jarvis:")
         with col2:
-            if st.button("🔊 Speak"):
+            if st.button("Speak"):
                 if spoken_text:
                     try:
                         engine = pyttsx3.init()
                         engine.say(spoken_text)
                         engine.runAndWait()
-                        st.success("✅ Voice output completed.")
+                        st.success("Voice output completed.")
                     except Exception as e:
-                        st.error(f"❌ Voice engine error: {e}")
+                        st.error(f"Voice engine error: {e}")
                 else:
-                    st.warning("⚠️ Please enter text to speak.")
+                    st.warning("Please enter text to speak.")
